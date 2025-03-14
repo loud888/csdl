@@ -1,0 +1,83 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Table, Button, Input, Modal, Form } from "antd";
+
+export default function DatabaseManagement() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const [editingRecord, setEditingRecord] = useState(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:5000/api/nsx");
+      setData(response.data);
+    } catch (error) {
+      console.error("Error fetching data", error);
+    }
+    setLoading(false);
+  };
+
+  const handleDelete = async (id) => {
+    await axios.delete(`http://localhost:5000/api/nsx/${id}`);
+    fetchData();
+  };
+
+  const handleEdit = (record) => {
+    setEditingRecord(record);
+    form.setFieldsValue(record);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (values) => {
+    if (editingRecord) {
+      await axios.put(`http://localhost:5000/api/nsx/${editingRecord.MaNSX}`, values);
+    } else {
+      await axios.post("http://localhost:5000/api/nsx", values);
+    }
+    setIsModalOpen(false);
+    setEditingRecord(null);
+    fetchData();
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Quản lý Nhà Sản Xuất</h1>
+      <Button type="primary" onClick={() => setIsModalOpen(true)} className="mb-4">
+        Thêm Nhà Sản Xuất
+      </Button>
+      <Table dataSource={data} loading={loading} rowKey="MaNSX">
+        <Table.Column title="Mã NSX" dataIndex="MaNSX" key="MaNSX" />
+        <Table.Column title="Tên NSX" dataIndex="TenNSX" key="TenNSX" />
+        <Table.Column title="Địa Chỉ" dataIndex="DiaChi" key="DiaChi" />
+        <Table.Column
+          title="Hành động"
+          render={(text, record) => (
+            <>
+              <Button onClick={() => handleEdit(record)} type="link">Sửa</Button>
+              <Button onClick={() => handleDelete(record.MaNSX)} type="link" danger>Xóa</Button>
+            </>
+          )}
+        />
+      </Table>
+      <Modal
+        title={editingRecord ? "Chỉnh sửa Nhà Sản Xuất" : "Thêm Nhà Sản Xuất"}
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onOk={() => form.submit()}
+      >
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form.Item name="MaNSX" label="Mã NSX" rules={[{ required: true }]}> <Input /> </Form.Item>
+          <Form.Item name="TenNSX" label="Tên NSX" rules={[{ required: true }]}> <Input /> </Form.Item>
+          <Form.Item name="DiaChi" label="Địa Chỉ" rules={[{ required: true }]}> <Input /> </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+}
