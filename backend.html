@@ -1,0 +1,62 @@
+const express = require('express');
+const mysql = require('mysql2');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Kết nối đến MySQL
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '', // Thay bằng mật khẩu MySQL của bạn
+    database: 'QLSX'
+});
+
+db.connect(err => {
+    if (err) {
+        console.error('Lỗi kết nối CSDL:', err);
+    } else {
+        console.log('Kết nối CSDL thành công');
+    }
+});
+
+// Lấy danh sách nhà sản xuất
+app.get('/nsx', (req, res) => {
+    db.query('SELECT * FROM NSX', (err, results) => {
+        if (err) res.status(500).json(err);
+        else res.json(results);
+    });
+});
+
+// Thêm nhà sản xuất
+app.post('/nsx', (req, res) => {
+    const { MaNSX, TenNSX, DiaChi } = req.body;
+    db.query('INSERT INTO NSX VALUES (?, ?, ?)', [MaNSX, TenNSX, DiaChi], (err, result) => {
+        if (err) res.status(500).json(err);
+        else res.json({ message: 'Thêm thành công' });
+    });
+});
+
+// Cập nhật nhà sản xuất
+app.put('/nsx/:id', (req, res) => {
+    const { TenNSX, DiaChi } = req.body;
+    db.query('UPDATE NSX SET TenNSX=?, DiaChi=? WHERE MaNSX=?', [TenNSX, DiaChi, req.params.id], (err, result) => {
+        if (err) res.status(500).json(err);
+        else res.json({ message: 'Cập nhật thành công' });
+    });
+});
+
+// Xóa nhà sản xuất
+app.delete('/nsx/:id', (req, res) => {
+    db.query('DELETE FROM NSX WHERE MaNSX=?', [req.params.id], (err, result) => {
+        if (err) res.status(500).json(err);
+        else res.json({ message: 'Xóa thành công' });
+    });
+});
+
+const PORT = 5000;
+app.listen(PORT, () => {
+    console.log(`Server chạy tại http://localhost:${PORT}`);
+});
